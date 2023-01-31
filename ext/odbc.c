@@ -1371,7 +1371,7 @@ mkutf(char *dest, SQLWCHAR *src, int len)
 }
 
 static VALUE
-uc_str_new(SQLWCHAR *str, int len)
+uc_tainted_str_new(SQLWCHAR *str, int len)
 {
     VALUE v;
     char *cp = xmalloc(len * 6 + 1);
@@ -1391,9 +1391,9 @@ uc_str_new(SQLWCHAR *str, int len)
 }
 
 static VALUE
-uc_str_new2(SQLWCHAR *str)
+uc_tainted_str_new2(SQLWCHAR *str)
 {
-    return uc_str_new(str, uc_strlen(str));
+    return uc_tainted_str_new(str, uc_strlen(str));
 }
 
 static VALUE
@@ -2384,8 +2384,8 @@ dbc_dsns(VALUE self)
 	descrLen = (descrLen == 0) ?
 	    (SQLSMALLINT) uc_strlen(descr) :
 	    (SQLSMALLINT) (descrLen / sizeof (SQLWCHAR));
-	rb_iv_set(odsn, "@name", uc_str_new(dsn, dsnLen));
-	rb_iv_set(odsn, "@descr", uc_str_new(descr, descrLen));
+	rb_iv_set(odsn, "@name", uc_tainted_str_new(dsn, dsnLen));
+	rb_iv_set(odsn, "@descr", uc_tainted_str_new(descr, descrLen));
 #else
 	dsnLen = (dsnLen == 0) ? (SQLSMALLINT) strlen(dsn) : dsnLen;
 	descrLen = (descrLen == 0) ? (SQLSMALLINT) strlen(descr) : descrLen;
@@ -2440,15 +2440,15 @@ dbc_drivers(VALUE self)
 	driverLen = (driverLen == 0) ?
 	    (SQLSMALLINT) uc_strlen(driver) :
 	    (SQLSMALLINT) (driverLen / sizeof (SQLWCHAR));
-	rb_iv_set(odrv, "@name", uc_str_new(driver, driverLen));
+	rb_iv_set(odrv, "@name", uc_tainted_str_new(driver, driverLen));
 	for (attr = attrs; *attr; attr += uc_strlen(attr) + 1) {
 	    SQLWCHAR *p = uc_strchr(attr, (SQLWCHAR) '=');
 
 	    if ((p != NULL) && (p != attr)) {
 		rb_hash_aset(h,
-			     uc_str_new(attr, (p - attr) /
+			     uc_tainted_str_new(attr, (p - attr) /
 						 sizeof (SQLWCHAR)),
-			     uc_str_new2(p + 1));
+			     uc_tainted_str_new2(p + 1));
 		count++;
 	    }
 	}
@@ -2759,7 +2759,7 @@ dbc_rfdsn(int argc, VALUE *argv, VALUE self)
 	uc_free(saname);
 	uc_free(skname);
 	if (rc) {
-	    return uc_str_new2(valbuf);
+	    return uc_tainted_str_new2(valbuf);
 	}
     } else {
 	sfname = (SQLWCHAR *) STR2CSTR(fname);
@@ -4583,7 +4583,7 @@ make_column(SQLHSTMT hstmt, int i, int upc, int use_scn)
 	    xfree(tmp);
 	}
     } else {
-	rb_iv_set(obj, "@name", uc_str_new2(name));
+	rb_iv_set(obj, "@name", uc_tainted_str_new2(name));
     }
 #else
     rb_iv_set(obj, "@name", rb_str_new2(upcase_if(name, upc)));
@@ -4602,7 +4602,7 @@ make_column(SQLHSTMT hstmt, int i, int upc, int use_scn)
 	    name[name_len / sizeof (name[0])] = 0;
 	}
 #ifdef UNICODE
-	v = uc_str_new2(name);
+	v = uc_tainted_str_new2(name);
 #else
 	v = rb_str_new2(name);
 #endif
@@ -6699,7 +6699,7 @@ stmt_param_output_value(int argc, VALUE *argv, VALUE self)
 	break;
 #ifdef UNICODE
     case SQL_C_WCHAR:
-	v = uc_str_new((SQLWCHAR *) q->paraminfo[vnum].outbuf,
+	v = uc_tainted_str_new((SQLWCHAR *) q->paraminfo[vnum].outbuf,
 			       q->paraminfo[vnum].rlen / sizeof (SQLWCHAR));
 	break;
 #endif
@@ -6777,7 +6777,7 @@ stmt_cursorname(int argc, VALUE *argv, VALUE self)
 #ifdef UNICODE
 	cnLen = (cnLen == 0) ? (SQLSMALLINT) uc_strlen(cname) :
 	    (SQLSMALLINT) (cnLen / sizeof (SQLWCHAR));
-	return uc_str_new(cname, cnLen);
+	return uc_tainted_str_new(cname, cnLen);
 #else
 	cnLen = (cnLen == 0) ? (SQLSMALLINT) strlen((char *) cname) : cnLen;
 	return rb_str_new((char *) cname, cnLen);
@@ -7359,7 +7359,7 @@ do_fetch(STMT *q, int mode)
 		break;
 #ifdef UNICODE
 	    case SQL_C_WCHAR:
-		v = uc_str_new((SQLWCHAR *) valp,
+		v = uc_tainted_str_new((SQLWCHAR *) valp,
 				       curlen / sizeof (SQLWCHAR));
 		break;
 #endif
